@@ -3,9 +3,8 @@ import {
     salvarNovoPedido, excluirSolicitacaoBanco, atualizarRetornoPcp,
     emailAutenticado, solicitacoes 
 } from "./firebase.js";
-import { listaVendedores } from "./vendedores.js"; // Importa a lista do arquivo separado
+import { listaVendedores } from "./vendedores.js"; 
 
-// Variáveis Locais da Interface
 let usuarioAtual = "";
 let itensDoPedidoAtual = [];
 let solicitacoesSelecionadasIds = [];
@@ -14,7 +13,20 @@ let filtroVendedorAtual = "";
 let filtroStatusAtual = "TODOS";
 let limiteRegistros = 100;
 
-/* POPULAR SELECT DE VENDEDORES (FORMULÁRIO, FILTRO E MONITORAMENTO) */
+// Registrar o plugin DataLabels globalmente se estiver disponível
+if (typeof ChartDataLabels !== 'undefined') {
+    Chart.register(ChartDataLabels);
+}
+
+// Variáveis para armazenar as instâncias do Chart.js
+let graficoStatus = null;
+let graficoArea = null;
+let graficoEvolucao = null;
+let graficoAtendimento = null;
+let graficoTopVendedores = null;
+let filtroMesPcpJaPreenchido = false;
+let filtroVendedoresPcpJaPreenchido = false;
+
 function carregarSelectVendedores() {
     const select = document.getElementById("vendedorNome");
     const selectMonitor = document.getElementById("monitorVendedorNome");
@@ -29,7 +41,6 @@ function carregarSelectVendedores() {
             option.textContent = nome;
             select.appendChild(option);
         }
-        
         if (selectMonitor) {
             const optionMonitor = document.createElement("option");
             optionMonitor.value = nome;
@@ -39,24 +50,8 @@ function carregarSelectVendedores() {
     });
 }
 
-function carregarSelectFiltroVendedores() {
-    const select = document.getElementById("filtroVendedor");
-    if (!select) return;
-
-    select.innerHTML = '<option value="">Todos os Vendedores</option>';
-
-    listaVendedores.sort().forEach(nome => {
-        const option = document.createElement("option");
-        option.value = nome;
-        option.textContent = nome;
-        select.appendChild(option);
-    });
-}
-
-// Inicialização segura dos selects (funciona mesmo se o DOM já carregou)
 function inicializarSelects() {
     carregarSelectVendedores();
-    carregarSelectFiltroVendedores();
 }
 
 if (document.readyState === "loading") {
@@ -65,7 +60,6 @@ if (document.readyState === "loading") {
     inicializarSelects();
 }
 
-/* CONTROLE DE SESSÃO */
 window.configurarSessaoUsuario = function(email) {
     if (email === "programacaomto@vendedor.com" || email.includes("vendedor")) {
         usuarioAtual = "Vendedor/Comercial";
@@ -81,8 +75,6 @@ window.configurarSessaoUsuario = function(email) {
     document.getElementById("app").style.display = "flex";
     document.getElementById("usuarioLogado").innerText = usuarioAtual;
 
-    carregarSelectFiltroVendedores(); 
-
     if (email === "programacaomto@vendedor.com" || email.includes("vendedor")) {
         document.getElementById("formSolicitante").classList.remove("hidden");
         configuringDataSolicitacaoAutomatica();
@@ -93,7 +85,6 @@ window.configurarSessaoUsuario = function(email) {
     iniciarOuvinteFirestore(limiteRegistros, renderTabela);
 };
 
-/* LOGIN & LOGOUT */
 async function login() {
     const email = document.getElementById("usuario").value.trim().toLowerCase();
     const senha = document.getElementById("senha").value;
@@ -121,10 +112,9 @@ function abrirPagina(id, btn) {
     document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
     document.getElementById(id).classList.add("active");
     document.querySelectorAll(".menu button").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
+    if(btn) btn.classList.add("active");
 }
 
-/* CÁLCULOS E DATAS */
 function aplicarBloqueioDatasRetroativas() {
     const hoje = new Date();
     const dataMinima = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`;
@@ -151,22 +141,16 @@ function calcularPrevisaoItem() {
 
 function calcularPrevisaoEspecifica(tipoMaterial, quantidade) {
     if (!quantidade || quantidade <= 0) return "-";
-    
     const dataCalculo = new Date();
     const tipoNormalizado = String(tipoMaterial).trim().toUpperCase();
-    
     const diasAdicionais = (tipoNormalizado === "MTO") ? 30 : 25;
-    
     dataCalculo.setDate(dataCalculo.getDate() + diasAdicionais);
-    
     const dia = String(dataCalculo.getDate()).padStart(2, '0');
     const mes = String(dataCalculo.getMonth() + 1).padStart(2, '0');
     const ano = dataCalculo.getFullYear();
-    
     return `${dia}/${mes}/${ano}`;
 }
 
-/* IMPORTAÇÃO EXCEL DE ITENS */
 function importarItensDoExcel(event) {
     const arquivo = event.target.files[0];
     const cli = document.getElementById("cliente").value.trim();
@@ -203,7 +187,6 @@ function importarItensDoExcel(event) {
                     contador++;
                 }
             });
-
             renderListaItensProvisorios();
             alert(`Sucesso! ${contador} itens importados.`);
         } catch (erro) {
@@ -257,7 +240,6 @@ function renderListaItensProvisorios() {
         tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: #94a3b8; font-style: italic; padding: 14px;">Nenhum item adicionado.</td></tr>`;
         return;
     }
-
     tbody.innerHTML = "";
     itensDoPedidoAtual.forEach((item, index) => {
         tbody.innerHTML += `
@@ -269,7 +251,6 @@ function renderListaItensProvisorios() {
     });
 }
 
-/* ENVIAR PEDIDO */
 async function enviarSolicitacaoMultiiens() {
     const vendedor = document.getElementById("vendedorNome").value.trim();
     const mercadoValor = document.getElementById("mercadoSolicitante").value;
@@ -320,9 +301,6 @@ async function enviarSolicitacaoMultiiens() {
     }
 }
 
-/* ==========================================================================
-   NOVA FUNCIONALIDADE: NAVEGAÇÃO E MONITORAMENTO VENDEDOR
-   ========================================================================== */
 function mudarAbaVendedor(aba) {
     const tabNova = document.getElementById("abaNovaSolicitacao");
     const tabMonitor = document.getElementById("abaMonitorarSolicitacoes");
@@ -340,7 +318,7 @@ function mudarAbaVendedor(aba) {
         tabNova.classList.add("hidden");
         tabMonitor.classList.remove("hidden");
         btns[1].classList.add("active");
-        renderMonitoramentoVendedor(); // Atualiza a lista ao abrir
+        renderMonitoramentoVendedor();
     }
 }
 
@@ -355,7 +333,6 @@ function renderMonitoramentoVendedor() {
         return;
     }
 
-    // Filtra as solicitações na memória baseada no vendedor
     const filtradas = solicitacoes.filter(item => item.vendedor === vendedor);
 
     if (filtradas.length === 0) {
@@ -396,9 +373,7 @@ function renderMonitoramentoVendedor() {
         `;
     });
 }
-/* ========================================================================== */
 
-/* TABELA E FILTROS */
 function renderTabela() {
     const tabela = document.getElementById("tabelaSolicitacoes");
     const busca = document.getElementById("inputBusca").value.toLowerCase().trim();
@@ -468,10 +443,15 @@ function renderTabela() {
 
     atualizarKPIs(baseDados);
 
-    // Atualiza automaticamente o monitoramento se a aba estiver aberta
     const tabMonitor = document.getElementById("abaMonitorarSolicitacoes");
     if (tabMonitor && !tabMonitor.classList.contains("hidden")) {
         renderMonitoramentoVendedor();
+    }
+    
+    // Atualiza indicadores caso a página PCP Indicadores esteja ativa
+    const pageIndicadores = document.getElementById("indicadoresPcpPage");
+    if (pageIndicadores && pageIndicadores.classList.contains("active")) {
+        renderizarIndicadoresPcp();
     }
 }
 
@@ -498,18 +478,19 @@ async function deletarSolicitacao(docId) {
     }
 }
 
-/* MODAL E RESPOSTAS */
+/* MODAL E RESPOSTAS PCP */
 function abrirModal(docId) {
     solicitacoesSelecionadasIds = [docId];
     const item = solicitacoes.find(x => x.docId === docId);
 
-    document.getElementById("modalTituloGeral").innerText = "Responder Solicitação";
+    document.getElementById("modalTituloGeral").innerText = `Responder ID ${item.id}`;
     document.getElementById("responsavelPcp").value = item.responsavelPcp !== "-" ? item.responsavelPcp : "";
     document.getElementById("areaPcp").value = item.areaPcp !== "-" && item.areaPcp ? item.areaPcp : "Escolha";
     document.getElementById("respostaTexto").value = item.resposta || "";
     document.getElementById("dataProducao").value = item.dataProducao !== "-" ? item.dataProducao : "";
     document.getElementById("dataRetornoPcp").value = item.dataRetornoPcp !== "-" ? item.dataRetornoPcp : "";
     document.getElementById("novoStatus").value = item.status || "PENDENTE";
+    
     document.getElementById("modalResposta").style.display = "flex";
 }
 
@@ -521,6 +502,7 @@ function abrirModalMassa() {
     document.getElementById("modalTituloGeral").innerText = `Responder ${solicitacoesSelecionadasIds.length} Itens Selecionados`;
     document.getElementById("responsavelPcp").value = "";
     document.getElementById("respostaTexto").value = "";
+    
     document.getElementById("modalResposta").style.display = "flex";
 }
 
@@ -565,6 +547,406 @@ async function salvarResposta() {
     }
 }
 
+/* ==========================================================================
+   INDICADORES PCP COM RÓTULOS E FILTRO MÚLTIPLO TOP 10
+   ========================================================================== */
+
+// 1. Fullscreen / Modo TV
+window.toggleModoTV = function() {
+    const container = document.getElementById("containerDashboardTV");
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        if (container.requestFullscreen) {
+            container.requestFullscreen().catch(e => console.error("Erro fullscreen:", e));
+        } else if (container.webkitRequestFullscreen) {
+            container.webkitRequestFullscreen();
+        } else if (container.msRequestFullscreen) {
+            container.msRequestFullscreen();
+        }
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+        }
+    }
+};
+
+document.addEventListener('fullscreenchange', handleFullscreenChange);
+document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+
+function handleFullscreenChange() {
+    const container = document.getElementById("containerDashboardTV");
+    const btnSair = document.getElementById("btnSairTV");
+    
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+        container.classList.add("tv-mode-active");
+        if (btnSair) btnSair.classList.remove("hidden");
+    } else {
+        container.classList.remove("tv-mode-active");
+        if (btnSair) btnSair.classList.add("hidden");
+    }
+    
+    setTimeout(() => {
+        if(graficoStatus) graficoStatus.resize();
+        if(graficoArea) graficoArea.resize();
+        if(graficoEvolucao) graficoEvolucao.resize();
+        if(graficoAtendimento) graficoAtendimento.resize();
+        if(graficoTopVendedores) graficoTopVendedores.resize();
+    }, 300);
+}
+
+// 2. Preencher Filtro de Mês Dinamicamente
+function popularFiltroMesPcp() {
+    const select = document.getElementById("filtroMesPcp");
+    if (!select || filtroMesPcpJaPreenchido) return;
+
+    const mesesNomes = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+    const mesesSet = new Set();
+
+    solicitacoes.forEach(item => {
+        if (item.dataSolicitacao && item.dataSolicitacao !== "-") {
+            const parts = item.dataSolicitacao.split('/');
+            if (parts.length === 3) mesesSet.add(`${parts[1]}/${parts[2]}`);
+        }
+        if (item.logAuditoria) {
+            const match = item.logAuditoria.match(/em (\d{2})\/(\d{2})\/(\d{4})/);
+            if (match) mesesSet.add(`${match[2]}/${match[3]}`);
+        }
+        if (item.dataAtendimento && item.dataAtendimento !== "-") {
+            const parts = item.dataAtendimento.split('/');
+            if (parts.length === 3) mesesSet.add(`${parts[1]}/${parts[2]}`);
+        }
+    });
+
+    const valorAtual = select.value;
+    select.innerHTML = '<option value="">Todos os Meses</option>';
+
+    Array.from(mesesSet).sort((a,b) => {
+        const [mA, yA] = a.split('/');
+        const [mB, yB] = b.split('/');
+        return yA !== yB ? yB - yA : mB - mA;
+    }).forEach(mesAno => {
+        const [m, y] = mesAno.split('/');
+        const nomeMes = mesesNomes[parseInt(m) - 1];
+        const option = document.createElement("option");
+        option.value = mesAno; // "MM/YYYY"
+        option.textContent = `${nomeMes}/${y}`;
+        select.appendChild(option);
+    });
+
+    if (Array.from(mesesSet).includes(valorAtual)) {
+        select.value = valorAtual;
+    }
+    filtroMesPcpJaPreenchido = true;
+}
+
+// 3. Sistema Customizado Multi-Select para o Top 10 Vendedores
+window.toggleMultiSelect = function(e) {
+    e.stopPropagation();
+    const dropdown = document.getElementById("dropdownVendedoresTop10");
+    if(dropdown) dropdown.classList.toggle("hidden");
+};
+
+// Fechar dropdown ao clicar fora
+document.addEventListener("click", function(e) {
+    const wrapper = document.getElementById("wrapperFiltroTop10");
+    const dropdown = document.getElementById("dropdownVendedoresTop10");
+    if(wrapper && dropdown && !wrapper.contains(e.target)) {
+        dropdown.classList.add("hidden");
+    }
+});
+
+function popularFiltroTop10Vendedores() {
+    const dropdown = document.getElementById("dropdownVendedoresTop10");
+    if(!dropdown || filtroVendedoresPcpJaPreenchido) return;
+
+    dropdown.innerHTML = "";
+    listaVendedores.sort().forEach(v => {
+        dropdown.innerHTML += `
+            <label class="multi-select-option">
+                <input type="checkbox" value="${v}" class="chk-vendedor-top10" onchange="renderizarIndicadoresPcp()">
+                ${v}
+            </label>
+        `;
+    });
+    filtroVendedoresPcpJaPreenchido = true;
+}
+
+// 4. Renderização Geral do Dashboard
+function renderizarIndicadoresPcp() {
+    popularFiltroMesPcp();
+    popularFiltroTop10Vendedores();
+    
+    const filtroMes = document.getElementById("filtroMesPcp").value;
+    const hojeStr = new Date().toLocaleDateString("pt-BR");
+    
+    // Filtro 1: Mês Global
+    let dadosFiltrados = solicitacoes;
+    if (filtroMes) {
+        dadosFiltrados = solicitacoes.filter(item => {
+            let inMonth = false;
+            if (item.dataSolicitacao && item.dataSolicitacao.includes(`/${filtroMes}`)) inMonth = true;
+            if (item.logAuditoria && item.logAuditoria.includes(`/${filtroMes}`)) inMonth = true;
+            if (item.dataAtendimento && item.dataAtendimento.includes(`/${filtroMes}`)) inMonth = true;
+            return inMonth;
+        });
+    }
+
+    const tituloKpiAtendimento = document.getElementById("tituloKpiAtendimento");
+    if (tituloKpiAtendimento) {
+        tituloKpiAtendimento.innerText = filtroMes ? "Total Atendimentos (Período)" : "Taxa Atendimento Diário (Hoje)";
+    }
+
+    // Variáveis Agregadoras Globais
+    let atendimentosPcp = 0;
+    const contagemStatus = { "PENDENTE": 0, "AGUARDANDO SUPRIMENTOS": 0, "AGUARDANDO COMERCIAL": 0, "PROGRAMADO": 0 };
+    let dec = { pendente: 0, andamento: 0, concluido: 0 };
+    let mon = { pendente: 0, andamento: 0, concluido: 0 };
+    const historicoNovas = {}; 
+    const historicoAtendimento = {};
+
+    // Variável Específica para Top 10 Vendedores
+    const contagemVendedores = {}; 
+    // Ler checkboxes marcados no novo filtro múltiplo
+    const checkboxesVendedores = Array.from(document.querySelectorAll(".chk-vendedor-top10:checked")).map(cb => cb.value);
+
+    // Iteração Única sobre Dados Filtrados
+    dadosFiltrados.forEach(item => {
+        // Atendimentos PCP
+        if (item.logAuditoria) {
+            const match = item.logAuditoria.match(/em (\d{2}\/\d{2}\/\d{4})/);
+            if(match) {
+                let dataLog = match[1];
+                historicoAtendimento[dataLog] = (historicoAtendimento[dataLog] || 0) + 1;
+                if (!filtroMes && dataLog === hojeStr) atendimentosPcp++;
+                else if (filtroMes) atendimentosPcp++;
+            }
+        }
+
+        // Status
+        const st = item.status || "PENDENTE";
+        if (contagemStatus[st] !== undefined) contagemStatus[st]++;
+        else contagemStatus[st] = 1;
+
+        // Áreas
+        if (item.areaPcp === "Decoração") {
+            if (st === "PENDENTE") dec.pendente++;
+            else if (st === "PROGRAMADO") dec.concluido++;
+            else dec.andamento++;
+        } else if (item.areaPcp === "Montagem") {
+            if (st === "PENDENTE") mon.pendente++;
+            else if (st === "PROGRAMADO") mon.concluido++;
+            else mon.andamento++;
+        }
+
+        // Evolução de Entradas
+        if (item.dataSolicitacao && item.dataSolicitacao !== "-") {
+            historicoNovas[item.dataSolicitacao] = (historicoNovas[item.dataSolicitacao] || 0) + 1;
+        }
+
+        // Vendedores (Respeitando também o filtro específico multi-select se houver)
+        if (item.vendedor && item.vendedor !== "-") {
+            if (checkboxesVendedores.length === 0 || checkboxesVendedores.includes(item.vendedor)) {
+                contagemVendedores[item.vendedor] = (contagemVendedores[item.vendedor] || 0) + 1;
+            }
+        }
+    });
+
+    document.getElementById("kpiPcpHoje").innerText = atendimentosPcp;
+    document.getElementById("kpiDecPendente").innerText = `${dec.pendente} / ${dec.andamento}`;
+    document.getElementById("kpiMonPendente").innerText = `${mon.pendente} / ${mon.andamento}`;
+
+    if(graficoStatus) graficoStatus.destroy();
+    if(graficoArea) graficoArea.destroy();
+    if(graficoEvolucao) graficoEvolucao.destroy();
+    if(graficoAtendimento) graficoAtendimento.destroy();
+    if(graficoTopVendedores) graficoTopVendedores.destroy();
+
+    // 1. Gráfico Rosca
+    const ctxStatus = document.getElementById('chartStatusPcp').getContext('2d');
+    graficoStatus = new Chart(ctxStatus, {
+        type: 'doughnut',
+        data: {
+            labels: ['Pendente', 'Ag. Suprimentos', 'Ag. Comercial', 'Programado'],
+            datasets: [{
+                data: [contagemStatus["PENDENTE"], contagemStatus["AGUARDANDO SUPRIMENTOS"], contagemStatus["AGUARDANDO COMERCIAL"], contagemStatus["PROGRAMADO"]],
+                backgroundColor: ['#f59e0b', '#0ea5e9', '#8b5cf6', '#22c55e']
+            }]
+        },
+        options: { 
+            responsive: true, maintainAspectRatio: false, layout: { padding: 20 },
+            plugins: { 
+                legend: { position: 'right' }, 
+                title: { display: true, text: 'Status Global de Solicitações' },
+                datalabels: {
+                    color: '#fff',
+                    font: { weight: 'bold', size: 12 },
+                    textAlign: 'center',
+                    formatter: (value, ctx) => {
+                        if(value === 0) return null;
+                        let sum = 0;
+                        ctx.chart.data.datasets[0].data.forEach(data => sum += data);
+                        let percentage = (value * 100 / sum).toFixed(1) + "%";
+                        let label = ctx.chart.data.labels[ctx.dataIndex];
+                        return `${label}
+${value} (${percentage})`;
+                    }
+                }
+            } 
+        }
+    });
+
+    // 2. Gráfico Barras Empilhadas
+    const ctxArea = document.getElementById('chartAreaPcp').getContext('2d');
+    graficoArea = new Chart(ctxArea, {
+        type: 'bar',
+        data: {
+            labels: ['Decoração', 'Montagem'],
+            datasets: [
+                { label: 'Pendente', data: [dec.pendente, mon.pendente], backgroundColor: '#f59e0b' },
+                { label: 'Em Andamento', data: [dec.andamento, mon.andamento], backgroundColor: '#0ea5e9' },
+                { label: 'Concluído / Programado', data: [dec.concluido, mon.concluido], backgroundColor: '#22c55e' }
+            ]
+        },
+        options: { 
+            responsive: true, maintainAspectRatio: false, 
+            scales: { x: { stacked: true }, y: { stacked: true } }, 
+            plugins: { 
+                title: { display: true, text: 'Volume por Setor Produtivo' },
+                datalabels: {
+                    color: '#fff',
+                    font: { weight: 'bold', size: 14 },
+                    anchor: 'center',
+                    align: 'center',
+                    formatter: (value) => value > 0 ? value : null
+                }
+            } 
+        }
+    });
+
+    // 3. Gráfico de Área (Evolução Diária)
+    const datasEv = Object.keys(historicoNovas).sort((a,b) => {
+        let pA = a.split('/'); let pB = b.split('/'); 
+        return new Date(`${pA[2]}-${pA[1]}-${pA[0]}`) - new Date(`${pB[2]}-${pB[1]}-${pB[0]}`);
+    }).slice(-15);
+    
+    const valsEv = datasEv.map(d => historicoNovas[d]);
+    const ctxEv = document.getElementById('chartEvolucaoPcp').getContext('2d');
+    graficoEvolucao = new Chart(ctxEv, {
+        type: 'line',
+        data: {
+            labels: datasEv,
+            datasets: [{
+                label: 'Entrada de Novas Solicitações', data: valsEv, 
+                borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.2)', fill: true, tension: 0.3
+            }]
+        },
+        options: { 
+            responsive: true, maintainAspectRatio: false, layout: { padding: { top: 25 } },
+            scales: { y: { suggestedMin: 0 } },
+            plugins: { 
+                legend: { display: false },
+                title: { display: true, text: 'Evolução Diária (Últimos Dias da Seleção)' },
+                datalabels: {
+                    color: '#6366f1',
+                    font: { weight: 'bold', size: 12 },
+                    anchor: 'end',
+                    align: 'top',
+                    offset: 4,
+                    formatter: (value) => value > 0 ? value : null
+                }
+            } 
+        }
+    });
+
+    // 4. Gráfico de Colunas (Respostas PCP)
+    const datasAt = Object.keys(historicoAtendimento).sort((a,b) => {
+        let pA = a.split('/'); let pB = b.split('/'); 
+        return new Date(`${pA[2]}-${pA[1]}-${pA[0]}`) - new Date(`${pB[2]}-${pB[1]}-${pB[0]}`);
+    }).slice(-15);
+    
+    const valsAt = datasAt.map(d => historicoAtendimento[d]);
+    const ctxAt = document.getElementById('chartAtendimentoPcp').getContext('2d');
+    graficoAtendimento = new Chart(ctxAt, {
+        type: 'bar',
+        data: {
+            labels: datasAt,
+            datasets: [{
+                label: 'Respostas do PCP', data: valsAt, backgroundColor: '#14b8a6', borderRadius: 4
+            }]
+        },
+        options: { 
+            responsive: true, maintainAspectRatio: false, layout: { padding: { top: 25 } },
+            scales: { y: { suggestedMin: 0 } },
+            plugins: { 
+                legend: { display: false }, // AJUSTE 1: REMOVIDO DEFINITIVAMENTE O PONTO VERDE (LEGENDA)
+                title: { display: true, text: 'Produtividade de Retornos PCP (Resoluções)' },
+                datalabels: {
+                    color: '#14b8a6',
+                    font: { weight: 'bold', size: 12 },
+                    anchor: 'end',
+                    align: 'top',
+                    formatter: (value) => value > 0 ? value : null
+                }
+            } 
+        }
+    });
+
+    // 5. Novo Gráfico Top 10 Vendedores com Estado Vazio
+    const topVendedores = Object.entries(contagemVendedores)
+        .sort((a, b) => b[1] - a[1]) // Do maior para o menor
+        .slice(0, 10); // Apenas 10 primeiros
+    
+    const canvasContainerTop10 = document.getElementById("canvasContainerTop10");
+    const emptyStateTop10 = document.getElementById("emptyStateTop10");
+
+    if (topVendedores.length === 0) {
+        canvasContainerTop10.classList.add("hidden");
+        emptyStateTop10.classList.remove("hidden");
+    } else {
+        canvasContainerTop10.classList.remove("hidden");
+        emptyStateTop10.classList.add("hidden");
+
+        const labelsVendedores = topVendedores.map(v => v[0]);
+        const dadosVendedores = topVendedores.map(v => v[1]);
+        
+        const ctxTopVend = document.getElementById('chartTopVendedoresPcp').getContext('2d');
+        graficoTopVendedores = new Chart(ctxTopVend, {
+            type: 'bar',
+            data: {
+                labels: labelsVendedores,
+                datasets: [{
+                    label: 'Solicitações', 
+                    data: dadosVendedores, 
+                    backgroundColor: '#8b5cf6', 
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                indexAxis: 'y', // Define o gráfico como barras horizontais
+                responsive: true, 
+                maintainAspectRatio: false, 
+                layout: { padding: { right: 35 } },
+                scales: { x: { suggestedMin: 0 } },
+                plugins: {
+                    legend: { display: false }, // Oculta a legenda 
+                    title: { display: false }, // Título está no HTML junto com o filtro
+                    datalabels: {
+                        color: '#8b5cf6',
+                        font: { weight: 'bold', size: 12 },
+                        anchor: 'end',
+                        align: 'right',
+                        formatter: (value) => value > 0 ? value : null
+                    }
+                }
+            }
+        });
+    }
+}
+/* ========================================================================== */
+
 /* EXPORTAÇÃO EXCEL */
 function exportarExcel() {
     const dados = solicitacoes.map(({ docId, ...resto }) => resto);
@@ -576,24 +958,18 @@ function exportarExcel() {
 
 /* EXPORTAÇÃO PDF */
 export function exportarPDF() {
-    console.log("Iniciando geração do PDF...");
-
     if (window.jspdf && window.jspdf.jsPDF) {
         window.jsPDF = window.jspdf.jsPDF;
     }
-
     if (!window.jsPDF) {
         return alert("A biblioteca jsPDF não foi carregada. Verifique sua conexão com a internet.");
     }
-
     try {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('l', 'mm', 'a4');
-
         if (typeof doc.autoTable !== 'function') {
             return alert("O plugin de tabela PDF (jspdf-autotable) não foi carregado corretamente.");
         }
-
         doc.setFontSize(14);
         doc.text("Programação MTO - Relatório de Solicitações", 14, 15);
         doc.setFontSize(10);
@@ -604,27 +980,14 @@ export function exportarPDF() {
             html: '#tabelaMtoHTML',
             startY: 28,
             theme: 'grid',
-            headStyles: {
-                fillColor: [15, 23, 42],
-                textColor: [255, 255, 255],
-                fontSize: 8,
-                fontStyle: 'bold'
-            },
-            bodyStyles: {
-                fontSize: 7,
-                textColor: [51, 65, 85]
-            },
-            alternateRowStyles: {
-                fillColor: [248, 250, 252]
-            },
+            headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255], fontSize: 8, fontStyle: 'bold' },
+            bodyStyles: { fontSize: 7, textColor: [51, 65, 85] },
+            alternateRowStyles: { fillColor: [248, 250, 252] },
             margin: { top: 28, right: 10, bottom: 10, left: 10 }
         });
 
         doc.save(`Programacao_MTO_${new Date().toISOString().slice(0, 10)}.pdf`);
-        console.log("PDF baixado com sucesso!");
-
     } catch (error) {
-        console.error("Erro detalhado na geração do PDF:", error);
         alert("Ocorreu um erro ao gerar o PDF. Pressione F12 e veja o Console para mais detalhes.");
     }
 }
@@ -652,16 +1015,9 @@ window.filtrarMes = () => {
     filtroMesAtual = document.getElementById("filtroMes").value; 
     renderTabela(); 
 };
-window.filtrarVendedor = () => { 
-    filtroVendedorAtual = document.getElementById("filtroVendedor").value; 
-    renderTabela(); 
-};
 window.limparFiltro = () => {
     filtroMesAtual = "";
-    filtroVendedorAtual = "";
     document.getElementById("filtroMes").value = ""; 
-    const selectVendedor = document.getElementById("filtroVendedor");
-    if (selectVendedor) selectVendedor.value = ""; 
     renderTabela();
 };
 window.toggleSelecionarTodos = (m) => { 
@@ -679,3 +1035,7 @@ window.gerenciarSelecaoItem = (c) => {
 };
 window.mudarAbaVendedor = mudarAbaVendedor;
 window.renderMonitoramentoVendedor = renderMonitoramentoVendedor;
+
+window.renderizarIndicadoresPcp = renderizarIndicadoresPcp;
+window.toggleModoTV = toggleModoTV;
+window.toggleMultiSelect = toggleMultiSelect;

@@ -571,7 +571,7 @@ textarea {
     background-color: #f8fafc;
 }
 
-/* Customização dos Status (Atualizados para v1.1.4) */
+/* Customização dos Status */
 .status-badge {
     padding: 4px 8px;
     border-radius: 12px;
@@ -582,9 +582,9 @@ textarea {
 }
 
 .status-pendente { background: #fef3c7; color: #b45309; }
-.status-aguardando-suprimentos { background: #e0f2fe; color: #0369a1; } /* Azul */
-.status-aguardando-comercial { background: #f3e8ff; color: #7e22ce; }   /* Roxo */
-.status-programado { background: #dcfce7; color: #15803d; }             /* Verde */
+.status-aguardando-suprimentos { background: #e0f2fe; color: #0369a1; } 
+.status-aguardando-comercial { background: #f3e8ff; color: #7e22ce; }   
+.status-programado { background: #dcfce7; color: #15803d; }             
 
 .paginacao-container {
     margin-top: 16px;
@@ -668,7 +668,7 @@ textarea {
 }
 
 /* ==========================================================================
-   8. ABAS DO VENDEDOR (NOVA SOLICITAÇÃO / MONITORAMENTO)
+   8. ABAS DO VENDEDOR 
    ========================================================================== */
 .tabs-vendedor {
     display: flex;
@@ -698,4 +698,215 @@ textarea {
 .tabs-vendedor .tab-btn.active {
     background: #0f172a;
     color: #ffffff;
+}
+
+/* ==========================================================================
+   9. INDICADORES PCP (DASHBOARD GRÁFICO, MODO TV E FILTRO MULTI-SELECT)
+   ========================================================================== */
+.kpi-pcp-board {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.kpi-pcp-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 16px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+}
+
+.kpi-pcp-card span {
+    font-size: 11px;
+    color: #64748b;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.kpi-pcp-card strong {
+    font-size: 24px;
+    color: #0f172a;
+    margin-top: 8px;
+}
+
+.charts-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.chart-container {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 16px;
+    position: relative;
+    height: 250px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.btn-tv {
+    background: #8b5cf6;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.2s;
+}
+
+.btn-tv:hover {
+    background: #7c3aed;
+}
+
+/* Estilos Específicos para o Filtro Múltiplo Personalizado (Top 10) */
+.multi-select-wrapper {
+    position: relative;
+    width: 220px;
+}
+
+.multi-select-btn {
+    width: 100%;
+    text-align: left;
+    padding: 8px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    cursor: pointer;
+    background: #fff;
+    font-size: 12px;
+    color: #334155;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: space-between;
+}
+
+.multi-select-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: 250px;
+    background: #fff;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    max-height: 220px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+    margin-top: 4px;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.multi-select-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    color: #334155;
+    padding: 4px;
+    border-radius: 4px;
+}
+
+.multi-select-option:hover {
+    background: #f1f5f9;
+}
+
+/* Estilos Específicos para o MODO TV/APRESENTAÇÃO */
+#containerDashboardTV {
+    transition: all 0.3s ease;
+}
+
+/* Fallback do Webkit e Padrão */
+#containerDashboardTV:fullscreen,
+#containerDashboardTV:-webkit-full-screen {
+    padding: 40px;
+    background-color: #f1f5f9 !important;
+    width: 100vw;
+    height: 100vh;
+    overflow-y: auto;
+}
+
+#containerDashboardTV:fullscreen .kpi-pcp-board,
+#containerDashboardTV:-webkit-full-screen .kpi-pcp-board {
+    gap: 24px;
+    margin-bottom: 40px;
+}
+
+#containerDashboardTV:fullscreen .kpi-pcp-card,
+#containerDashboardTV:-webkit-full-screen .kpi-pcp-card {
+    padding: 30px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+#containerDashboardTV:fullscreen .kpi-pcp-card span,
+#containerDashboardTV:-webkit-full-screen .kpi-pcp-card span {
+    font-size: 18px;
+}
+
+#containerDashboardTV:fullscreen .kpi-pcp-card strong,
+#containerDashboardTV:-webkit-full-screen .kpi-pcp-card strong {
+    font-size: 56px;
+}
+
+#containerDashboardTV:fullscreen .charts-grid,
+#containerDashboardTV:-webkit-full-screen .charts-grid {
+    gap: 24px;
+}
+
+#containerDashboardTV:fullscreen .chart-container,
+#containerDashboardTV:-webkit-full-screen .chart-container {
+    height: 45vh !important;
+    padding: 24px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* Classe via JS como fallback de CSS */
+#containerDashboardTV.tv-mode-active {
+    padding: 40px;
+    background-color: #f1f5f9 !important;
+    width: 100vw;
+    height: 100vh;
+    overflow-y: auto;
+}
+
+#containerDashboardTV.tv-mode-active .kpi-pcp-board {
+    gap: 24px;
+    margin-bottom: 40px;
+}
+
+#containerDashboardTV.tv-mode-active .kpi-pcp-card {
+    padding: 30px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+#containerDashboardTV.tv-mode-active .kpi-pcp-card span {
+    font-size: 18px;
+}
+
+#containerDashboardTV.tv-mode-active .kpi-pcp-card strong {
+    font-size: 56px;
+}
+
+#containerDashboardTV.tv-mode-active .charts-grid {
+    gap: 24px;
+}
+
+#containerDashboardTV.tv-mode-active .chart-container {
+    height: 45vh !important;
+    padding: 24px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }

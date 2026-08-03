@@ -13,9 +13,14 @@
     
     <link rel="stylesheet" href="style.css">
 
+    <!-- Bibliotecas Externas -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.6.0/dist/jspdf.plugin.autotable.min.js"></script>
+    
+    <!-- Chart.js e Datalabels -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
 </head>
 
 <body>
@@ -42,7 +47,7 @@
                         </div>
                         <div class="login-card">
                             <i class="fa-solid fa-circle-check"></i>
-                             <strong>Comunicação PCP</strong>
+                            <strong>Comunicação PCP</strong>
                             <span>Retornos organizados entre solicitante e destinatário.</span>
                         </div>
                         <div class="login-card">
@@ -91,6 +96,10 @@
                     <button class="active" onclick="abrirPagina('solicitacoes', this)">
                         <i class="fa-solid fa-table-columns"></i> Painel de Controle
                     </button>
+                    <!-- ABA INDICADORES (SÓ VISÍVEL PARA PCP) -->
+                    <button id="menuIndicadores" class="hidden id-pcp-view" onclick="abrirPagina('indicadoresPcpPage', this); renderizarIndicadoresPcp();">
+                        <i class="fa-solid fa-chart-pie"></i> Indicadores
+                    </button>
                     <button onclick="abrirPagina('exportacoes', this)">
                         <i class="fa-solid fa-file-export"></i> Exportações
                     </button>
@@ -114,6 +123,7 @@
             </header>
 
             <div class="content">
+                <!-- PÁGINA 1: PAINEL DE CONTROLE / SOLICITAÇÕES -->
                 <div class="page active" id="solicitacoes">
                     
                     <div class="cards">
@@ -170,13 +180,13 @@
 
                     <div class="form-box hidden" id="formSolicitante">
                         
-                        <!-- NOVO: ABAS DE NAVEGAÇÃO DO VENDEDOR -->
+                        <!-- ABAS DE NAVEGAÇÃO DO VENDEDOR -->
                         <div class="tabs-vendedor">
                             <button class="tab-btn active" onclick="mudarAbaVendedor('nova')">Nova Solicitação</button>
                             <button class="tab-btn" onclick="mudarAbaVendedor('monitorar')">Monitorar Solicitações</button>
                         </div>
                         
-                        <!-- TELA 1: NOVA SOLICITAÇÃO (Mantida exatamente como original) -->
+                        <!-- TELA 1: NOVA SOLICITAÇÃO -->
                         <div id="abaNovaSolicitacao">
                             <div class="section-title">Nova Solicitação MTO</div>
                             
@@ -290,7 +300,7 @@
                             <button class="send-btn" id="btnEnviarSol" onclick="enviarSolicitacaoMultiiens()">ENVIAR PEDIDO COMPLETO</button>
                         </div>
                         
-                        <!-- TELA 2: MONITORAR SOLICITAÇÕES (Nova Interface) -->
+                        <!-- TELA 2: MONITORAR SOLICITAÇÕES (Vendedor) -->
                         <div id="abaMonitorarSolicitacoes" class="hidden">
                             <div class="section-title">Monitorar Solicitações</div>
                             
@@ -332,16 +342,16 @@
 
                     </div>
 
-                   <div class="actions">
-    <input type="month" id="filtroMes" style="max-width:220px;">
+                    <div class="actions">
+                        <input type="month" id="filtroMes" style="max-width:220px;">
 
-    <button class="send-btn" style="margin-top:0;" onclick="filtrarMes()">FILTRAR</button>
-    <button class="logout" style="width:auto; margin-top:0; background:#64748b;" onclick="limparFiltro()">LIMPAR FILTROS</button>
-
-    <button id="btnRespostaMassa" class="btn-massa hidden" onclick="abrirModalMassa()">
-        <i class="fa-solid fa-layer-group"></i> Responder Selecionados
-    </button>
-</div>
+                        <button class="send-btn" style="margin-top:0;" onclick="filtrarMes()">FILTRAR</button>
+                        <button class="logout" style="width:auto; margin-top:0; background:#64748b;" onclick="limparFiltro()">LIMPAR FILTROS</button>
+        
+                        <button id="btnRespostaMassa" class="btn-massa hidden" onclick="abrirModalMassa()">
+                            <i class="fa-solid fa-layer-group"></i> Responder Selecionados
+                        </button>
+                    </div>
 
                     <div class="table-box">
                         <table id="tabelaMtoHTML">
@@ -381,6 +391,93 @@
                     </div>
                 </div>
 
+                <!-- PÁGINA 2: INDICADORES GERENCIAIS PCP -->
+                <div class="page" id="indicadoresPcpPage">
+                    <div class="header-indicadores" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+                        <div class="section-title" style="margin-bottom: 0; font-size: 20px;">Indicadores e Métricas Gerenciais (PCP)</div>
+                        
+                        <!-- FILTRO DE MÊS E BOTÃO MODO TV -->
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <select id="filtroMesPcp" onchange="renderizarIndicadoresPcp()" style="padding: 10px 14px; border-radius: 8px; border: 1px solid #cbd5e1; outline: none; font-size: 13px; font-weight: 600; color: #334155; min-width: 180px; background-color: #fff;">
+                                <option value="">Todos os Meses</option>
+                            </select>
+                            
+                            <button class="btn-tv" onclick="toggleModoTV()">
+                                <i class="fa-solid fa-tv"></i> MODO TV
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- CONTAINER DO DASHBOARD (Que entrará em tela cheia) -->
+                    <div id="containerDashboardTV" style="background: transparent;">
+                        
+                        <button id="btnSairTV" class="logout hidden" style="position: absolute; top: 20px; right: 20px; width: auto; z-index: 9999; padding: 10px 16px; font-size: 14px; border-radius: 8px;" onclick="toggleModoTV()">
+                            <i class="fa-solid fa-xmark"></i> Sair do Modo TV
+                        </button>
+
+                        <!-- KPIs Rápidos -->
+                        <div class="kpi-pcp-board">
+                            <div class="kpi-pcp-card">
+                                <span id="tituloKpiAtendimento">Taxa Atendimento Diário (Hoje)</span>
+                                <strong id="kpiPcpHoje" style="color: #14b8a6;">0</strong>
+                            </div>
+                            <div class="kpi-pcp-card">
+                                <span>Decoração (Pendentes/Andamento)</span>
+                                <strong id="kpiDecPendente" style="color: #f59e0b;">0</strong>
+                            </div>
+                            <div class="kpi-pcp-card">
+                                <span>Montagem (Pendentes/Andamento)</span>
+                                <strong id="kpiMonPendente" style="color: #0ea5e9;">0</strong>
+                            </div>
+                        </div>
+
+                        <!-- Gráficos -->
+                        <div class="charts-grid">
+                            <div class="chart-container">
+                                <canvas id="chartStatusPcp"></canvas>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="chartAreaPcp"></canvas>
+                            </div>
+                            <div class="chart-container" style="grid-column: 1 / -1; height: 300px;">
+                                <canvas id="chartEvolucaoPcp"></canvas>
+                            </div>
+                            <div class="chart-container" style="grid-column: 1 / -1; height: 300px;">
+                                <canvas id="chartAtendimentoPcp"></canvas>
+                            </div>
+                            
+                            <!-- NOVO GRÁFICO: TOP 10 VENDEDORES (Com Filtro Múltiplo Incorporado) -->
+                            <div class="chart-container" style="grid-column: 1 / -1; display: flex; flex-direction: column; min-height: 380px;">
+                                
+                                <div class="header-top10" style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 16px; position: relative; z-index: 20;">
+                                    <h3 style="font-size: 14px; font-weight: 700; color: #475569;">Top 10 Solicitações por Vendedor</h3>
+                                    
+                                    <div class="multi-select-wrapper" id="wrapperFiltroTop10">
+                                        <button class="multi-select-btn" onclick="toggleMultiSelect(event)">
+                                            <span><i class="fa-solid fa-filter"></i> Filtrar Vendedores</span>
+                                            <i class="fa-solid fa-chevron-down"></i>
+                                        </button>
+                                        <div class="multi-select-dropdown hidden" id="dropdownVendedoresTop10">
+                                            <!-- Povoado via JavaScript -->
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div id="emptyStateTop10" class="hidden" style="text-align: center; color: #94a3b8; font-style: italic; margin: auto; padding: 40px;">
+                                    Nenhuma solicitação encontrada para os filtros selecionados.
+                                </div>
+                                
+                                <div id="canvasContainerTop10" style="flex: 1; position: relative; width: 100%; min-height: 250px;">
+                                    <canvas id="chartTopVendedoresPcp"></canvas>
+                                </div>
+
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- PÁGINA 3: EXPORTAÇÕES -->
                 <div class="page" id="exportacoes">
                     <div class="cards">
                         <div class="card">
@@ -409,8 +506,9 @@
         </main>
     </div>
 
+    <!-- MODAL DE RESPOSTA ORIGINAL -->
     <div class="modal" id="modalResposta">
-        <div class="modal-content">
+        <div class="modal-content" id="modalPcpContent">
             <div class="modal-header">
                 <h2 class="modal-title" id="modalTituloGeral">Responder Solicitação</h2>
                 <button type="button" class="btn-fechar-modal" onclick="fecharModal()">&times;</button>
