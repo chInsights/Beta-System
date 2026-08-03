@@ -42,7 +42,7 @@
                         </div>
                         <div class="login-card">
                             <i class="fa-solid fa-circle-check"></i>
-                            <strong>Comunicação PCP</strong>
+                             <strong>Comunicação PCP</strong>
                             <span>Retornos organizados entre solicitante e destinatário.</span>
                         </div>
                         <div class="login-card">
@@ -332,20 +332,16 @@
 
                     </div>
 
-                    <div class="actions">
-                    <input type="month" id="filtroMes" style="max-width:220px;">
+                   <div class="actions">
+    <input type="month" id="filtroMes" style="max-width:220px;">
 
-                    <select id="filtroVendedor" style="max-width:220px;" onchange="filtrarVendedor()">
-                     <option value="">Todos os Vendedores</option>
-                    </select>
+    <button class="send-btn" style="margin-top:0;" onclick="filtrarMes()">FILTRAR</button>
+    <button class="logout" style="width:auto; margin-top:0; background:#64748b;" onclick="limparFiltro()">LIMPAR FILTROS</button>
 
-                    <button class="send-btn" style="margin-top:0;" onclick="filtrarMes()">FILTRAR</button>
-                    <button class="logout" style="width:auto; margin-top:0; background:#64748b;" onclick="limparFiltro()">LIMPAR FILTROS</button>
-    
-                   <button id="btnRespostaMassa" class="btn-massa hidden" onclick="abrirModalMassa()">
-                    <i class="fa-solid fa-layer-group"></i> Responder Selecionados
-                   </button>
-                  </div>
+    <button id="btnRespostaMassa" class="btn-massa hidden" onclick="abrirModalMassa()">
+        <i class="fa-solid fa-layer-group"></i> Responder Selecionados
+    </button>
+</div>
 
                     <div class="table-box">
                         <table id="tabelaMtoHTML">
