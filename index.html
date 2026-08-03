@@ -97,7 +97,7 @@
                         <i class="fa-solid fa-table-columns"></i> Painel de Controle
                     </button>
                     <!-- ABA INDICADORES (SÓ VISÍVEL PARA PCP) -->
-                    <button id="menuIndicadores" class="hidden id-pcp-view" onclick="abrirPagina('indicadoresPcpPage', this); renderizarIndicadoresPcp();">
+                    <button id="menuIndicadores" class="hidden id-pcp-view" onclick="abrirPagina('indicadoresPcpPage', this); window.renderizarIndicadoresPcp();">
                         <i class="fa-solid fa-chart-pie"></i> Indicadores
                     </button>
                     <button onclick="abrirPagina('exportacoes', this)">
@@ -123,6 +123,11 @@
             </header>
 
             <div class="content">
+                
+                <!-- ========================================================================== -->
+                <!--                   COMPONENTE GLOBAL / VENDEDORES                           -->
+                <!-- ========================================================================== -->
+                
                 <!-- PÁGINA 1: PAINEL DE CONTROLE / SOLICITAÇÕES -->
                 <div class="page active" id="solicitacoes">
                     
@@ -178,6 +183,7 @@
                         </div>
                     </div>
 
+                    <!-- MODAL DO VENDEDOR -->
                     <div class="form-box hidden" id="formSolicitante">
                         
                         <!-- ABAS DE NAVEGAÇÃO DO VENDEDOR -->
@@ -342,6 +348,7 @@
 
                     </div>
 
+                    <!-- TABELA PRINCIPAL DE SOLICITAÇÕES -->
                     <div class="actions">
                         <input type="month" id="filtroMes" style="max-width:220px;">
 
@@ -391,6 +398,10 @@
                     </div>
                 </div>
 
+                <!-- ========================================================================== -->
+                <!--                       COMPONENTE EXCLUSIVO PCP                             -->
+                <!-- ========================================================================== -->
+                
                 <!-- PÁGINA 2: INDICADORES GERENCIAIS PCP -->
                 <div class="page" id="indicadoresPcpPage">
                     <div class="header-indicadores" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
@@ -446,7 +457,7 @@
                                 <canvas id="chartAtendimentoPcp"></canvas>
                             </div>
                             
-                            <!-- NOVO GRÁFICO: TOP 10 VENDEDORES (Com Filtro Múltiplo Incorporado) -->
+                            <!-- GRÁFICO: TOP 10 VENDEDORES (Com Filtro Múltiplo Incorporado) -->
                             <div class="chart-container" style="grid-column: 1 / -1; display: flex; flex-direction: column; min-height: 380px;">
                                 
                                 <div class="header-top10" style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 16px; position: relative; z-index: 20;">
@@ -477,7 +488,7 @@
                     </div>
                 </div>
 
-                <!-- PÁGINA 3: EXPORTAÇÕES -->
+                <!-- PÁGINA 3: EXPORTAÇÕES (PCP e Geral) -->
                 <div class="page" id="exportacoes">
                     <div class="cards">
                         <div class="card">
@@ -506,7 +517,7 @@
         </main>
     </div>
 
-    <!-- MODAL DE RESPOSTA ORIGINAL -->
+    <!-- MODAL DE RESPOSTA PCP -->
     <div class="modal" id="modalResposta">
         <div class="modal-content" id="modalPcpContent">
             <div class="modal-header">
