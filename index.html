@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Programação MTO</title>
+
+    <link rel="manifest" href="manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+    
+    <link rel="stylesheet" href="style.css">
+
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.6.0/dist/jspdf.plugin.autotable.min.js"></script>
+</head>
+
+<body>
+
+    <div class="marca-dagua">Desenvolvido por Carlos Henrique</div>
+
+    <div class="login-screen" id="loginScreen">
+        <div class="login-container">
+            <div class="login-left">
+                <div>
+                    <h1>Plataforma Corporativa MTO</h1>
+                    <p>Sistema operacional para gestão de solicitações, retornos PCP e acompanhamento de produção em tempo real.</p>
+                    
+                    <div class="login-cards">
+                        <div class="login-card">
+                            <i class="fa-solid fa-chart-line"></i>
+                            <strong>Gestão Inteligente</strong>
+                            <span>Controle centralizado das solicitações MTO.</span>
+                        </div>
+                        <div class="login-card">
+                            <i class="fa-solid fa-clock"></i>
+                            <strong>Fluxo Operacional</strong>
+                            <span>Acompanhamento rápido das demandas produtivas.</span>
+                        </div>
+                        <div class="login-card">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <strong>Comunicação PCP</strong>
+                            <span>Retornos organizados entre solicitante e destinatário.</span>
+                        </div>
+                        <div class="login-card">
+                            <i class="fa-solid fa-box"></i>
+                            <strong>Ambiente Corporativo</strong>
+                            <span>Interface moderna focada em logística e produção.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="login-right">
+                <div class="login-box">
+                    <div class="logo-login">N</div>
+                    <h2>Programação MTO</h2>
+                    <p>Acesse com seu e-mail e senha cadastrados.</p>
+
+                    <div class="field">
+                        <label for="usuario">E-MAIL</label>
+                        <input type="email" id="usuario" placeholder="exemplo@dominio.com">
+                    </div>
+                    <div class="field">
+                        <label for="senha">SENHA</label>
+                        <input type="password" id="senha" placeholder="******">
+                    </div>
+                    
+                    <button class="login-btn" id="btnLogin" onclick="login()">ACESSAR SISTEMA</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app" id="app">
+        
+        <aside class="sidebar">
+            <div>
+                <div class="brand">
+                    <div class="brand-logo">N</div>
+                    <div>
+                        <h2>MTO</h2>
+                        <span>Painel Corporativo</span>
+                    </div>
+                </div>
+
+                <nav class="menu">
+                    <button class="active" onclick="abrirPagina('solicitacoes', this)">
+                        <i class="fa-solid fa-table-columns"></i> Painel de Controle
+                    </button>
+                    <button onclick="abrirPagina('exportacoes', this)">
+                        <i class="fa-solid fa-file-export"></i> Exportações
+                    </button>
+                </nav>
+            </div>
+
+            <div class="user-card">
+                <strong id="usuarioLogado">Usuário</strong>
+                <span>Plataforma Corporativa MTO</span>
+                <button class="logout" onclick="logout()">SAIR</button>
+            </div>
+        </aside>
+
+        <main class="main">
+            <header class="topbar">
+                <div class="breadcrumb">Programação MTO / Operações Real-time</div>
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="inputBusca" placeholder="Pesquisar por cliente, código, vendedor..." oninput="renderTabela()">
+                </div>
+            </header>
+
+            <div class="content">
+                <div class="page active" id="solicitacoes">
+                    
+                    <div class="cards">
+                        <div class="card active-filter" id="cardTotal" onclick="filtrarPorStatus('TODOS')">
+                            <div class="card-top">
+                                <div>
+                                    <div class="card-title">Total Geral</div>
+                                    <div class="card-value" id="kpiTotal">0</div>
+                                </div>
+                                <i class="fa-solid fa-list card-icon-total"></i>
+                            </div>
+                        </div>
+
+                        <div class="card" id="cardPendente" onclick="filtrarPorStatus('PENDENTE')">
+                            <div class="card-top">
+                                <div>
+                                    <div class="card-title">Pendentes</div>
+                                    <div class="card-value" id="kpiPendentes">0</div>
+                                </div>
+                                <i class="fa-solid fa-clock card-icon-pendente"></i>
+                            </div>
+                        </div>
+
+                        <div class="card" id="cardAguardandoSup" onclick="filtrarPorStatus('AGUARDANDO SUPRIMENTOS')">
+                            <div class="card-top">
+                                <div>
+                                    <div class="card-title">Ag. Suprimentos</div>
+                                    <div class="card-value" id="kpiAguardandoSup">0</div>
+                                </div>
+                                <i class="fa-solid fa-boxes-packing card-icon-aguardando-sup"></i>
+                            </div>
+                        </div>
+
+                        <div class="card" id="cardAguardandoCom" onclick="filtrarPorStatus('AGUARDANDO COMERCIAL')">
+                            <div class="card-top">
+                                <div>
+                                    <div class="card-title">Ag. Comercial</div>
+                                    <div class="card-value" id="kpiAguardandoCom">0</div>
+                                </div>
+                                <i class="fa-solid fa-headset card-icon-aguardando-com"></i>
+                            </div>
+                        </div>
+
+                        <div class="card" id="cardProgramado" onclick="filtrarPorStatus('PROGRAMADO')">
+                            <div class="card-top">
+                                <div>
+                                    <div class="card-title">Programados</div>
+                                    <div class="card-value" id="kpiProgramados">0</div>
+                                </div>
+                                <i class="fa-solid fa-calendar-check card-icon-programado"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-box hidden" id="formSolicitante">
+                        
+                        <!-- NOVO: ABAS DE NAVEGAÇÃO DO VENDEDOR -->
+                        <div class="tabs-vendedor">
+                            <button class="tab-btn active" onclick="mudarAbaVendedor('nova')">Nova Solicitação</button>
+                            <button class="tab-btn" onclick="mudarAbaVendedor('monitorar')">Monitorar Solicitações</button>
+                        </div>
+                        
+                        <!-- TELA 1: NOVA SOLICITAÇÃO (Mantida exatamente como original) -->
+                        <div id="abaNovaSolicitacao">
+                            <div class="section-title">Nova Solicitação MTO</div>
+                            
+                            <div class="grid">
+                                <div>
+                                    <label class="field-label">VENDEDOR *</label>
+                                    <select id="vendedorNome">
+                                        <option value="">Selecione o Vendedor...</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="field-label">MERCADO SOLICITANTE</label>
+                                    <select id="mercadoSolicitante">
+                                        <option value="Exportação">Exportação</option>
+                                        <option value="BPP">BPP</option>
+                                        <option value="Domestico">Domestico</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="field-label">CLIENTE *</label>
+                                    <input type="text" id="cliente" placeholder="Nome do cliente...">
+                                </div>
+                                <div>
+                                    <label class="field-label">NÚMERO DO PEDIDO *</label>
+                                    <input type="text" id="numeroPedido" placeholder="Número do pedido unificado...">
+                                </div>
+                                <div>
+                                    <label class="field-label">ENVIAR PARA</label>
+                                    <select id="destinatario">
+                                        <option value="atendimento@pcp.com">Atendimento PCP</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="field-label">DATA SOLICITADA (AUTOMÁTICA)</label>
+                                    <input type="text" id="dataSolicitacao" readonly style="letter-spacing: 0.5px;">
+                                </div>
+                            </div>
+
+                            <div class="sub-secao-itens">
+                                <h3 style="font-size: 16px; margin-bottom: 14px; color: #1e293b;">
+                                    <i class="fa-solid fa-boxes-stacked"></i> Incluir Itens no Pedido
+                                </h3>
+                                
+                                <div class="grid">
+                                    <div>
+                                        <label class="field-label">COD ITEM (Box) *</label>
+                                        <input type="text" id="itemCod" placeholder="Código...">
+                                    </div>
+                                    <div>
+                                        <label class="field-label">TIPO DE MATERIAL</label>
+                                        <select id="itemTipoMaterial" onchange="calcularPrevisaoItem()">
+                                            <option value="MTO">MTO</option>
+                                            <option value="Etiquetagem">Etiquetagem</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="field-label">
+                                            QTD SOLICITADA * <span style="color: #ef4444; font-size: 10px; font-weight: 700; text-transform: none; margin-left: 4px;">(Apenas BOX)</span>
+                                        </label>
+                                        <input type="number" id="itemQuantidade" oninput="calcularPrevisaoItem()" placeholder="0">
+                                    </div>
+                                    <div>
+                                        <label class="field-label">DATA PREVISTA (AUTOMÁTICA)</label>
+                                        <input type="text" id="itemPrevisaoEntrega" readonly placeholder="Calculada...">
+                                    </div>
+                                    <div>
+                                        <label class="field-label">DATA CLIENTE</label>
+                                        <input type="date" id="itemDataCliente">
+                                    </div>
+                                    <div>
+                                        <label class="field-label">DATA DESEJÁVEL</label>
+                                        <input type="date" id="itemDataDesejavel">
+                                    </div>
+                                </div>
+                                
+                                <div class="botoes-acoes-itens">
+                                    <button type="button" class="btn-adicionar-item" onclick="adicionarItemNaLista()">＋ Adicionar Item na Lista</button>
+                                    <button type="button" class="btn-importar-excel" onclick="document.getElementById('inputExcelItem').click()">
+                                        <i class="fa-solid fa-file-excel"></i> Importar Itens da Planilha
+                                    </button>
+                                    <input type="file" id="inputExcelItem" accept=".xlsx, .xls, .csv" style="display: none;" onchange="importarItensDoExcel(event)">
+                                </div>
+
+                                <div class="tabela-itens-wrapper">
+                                    <table class="tabela-itens-provisorios">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 40%;">Item (Código)</th>
+                                                <th style="width: 30%;">Quantidade</th>
+                                                <th style="width: 30%;">Pedido</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="listaItensProvisorios">
+                                            <tr>
+                                                <td colspan="3" style="text-align: center; color: #94a3b8; font-style: italic; padding: 14px;">
+                                                    Nenhum item adicionado (Dê duplo clique na linha inserida para remover).
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="grid" style="margin-top: 20px;">
+                                <div class="full">
+                                    <label class="field-label">OBSERVAÇÃO GERAL DO PEDIDO</label>
+                                    <textarea id="observacao" placeholder="Informações adicionais para a fábrica..."></textarea>
+                                </div>
+                            </div>
+
+                            <button class="send-btn" id="btnEnviarSol" onclick="enviarSolicitacaoMultiiens()">ENVIAR PEDIDO COMPLETO</button>
+                        </div>
+                        
+                        <!-- TELA 2: MONITORAR SOLICITAÇÕES (Nova Interface) -->
+                        <div id="abaMonitorarSolicitacoes" class="hidden">
+                            <div class="section-title">Monitorar Solicitações</div>
+                            
+                            <div class="grid">
+                                <div>
+                                    <label class="field-label">SELECIONE O VENDEDOR</label>
+                                    <select id="monitorVendedorNome" onchange="renderMonitoramentoVendedor()">
+                                        <option value="">Selecione o Vendedor...</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="table-box" style="margin-top: 20px; max-height: 400px;">
+                                <table id="tabelaMonitoramento">
+                                    <thead>
+                                        <tr>
+                                            <th>Nº Pedido</th>
+                                            <th>Data Sol.</th>
+                                            <th>Cliente</th>
+                                            <th>Produto</th>
+                                            <th>Qtd</th>
+                                            <th>Status</th>
+                                            <th>Resp. PCP</th>
+                                            <th>Previsão</th>
+                                            <th>Última Atualização</th>
+                                            <th>Obs / Retorno</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="listaMonitoramento">
+                                        <tr>
+                                            <td colspan="10" style="text-align: center; color: #94a3b8; font-style: italic; padding: 14px;">
+                                                Selecione um vendedor para monitorar suas solicitações.
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="actions">
+                    <input type="month" id="filtroMes" style="max-width:220px;">
+
+                    <select id="filtroVendedor" style="max-width:220px;" onchange="filtrarVendedor()">
+                     <option value="">Todos os Vendedores</option>
+                    </select>
+
+                    <button class="send-btn" style="margin-top:0;" onclick="filtrarMes()">FILTRAR</button>
+                    <button class="logout" style="width:auto; margin-top:0; background:#64748b;" onclick="limparFiltro()">LIMPAR FILTROS</button>
+    
+                   <button id="btnRespostaMassa" class="btn-massa hidden" onclick="abrirModalMassa()">
+                    <i class="fa-solid fa-layer-group"></i> Responder Selecionados
+                   </button>
+                  </div>
+
+                    <div class="table-box">
+                        <table id="tabelaMtoHTML">
+                            <thead>
+                                <tr>
+                                    <th class="col-checkbox id-pcp-view hidden">
+                                        <input type="checkbox" id="chkSelecionarTodos" class="chk-solicitacao" onclick="toggleSelecionarTodos(this)">
+                                    </th>
+                                    <th>ID</th>
+                                    <th>TIPO</th>
+                                    <th>MERCADO</th>
+                                    <th>VENDEDOR</th>
+                                    <th>DATA SOLICITADA</th>
+                                    <th>DATA CLIENTE</th>
+                                    <th>DATA PREVISTA</th>
+                                    <th>DATA DESEJÁVEL</th>
+                                    <th>DATA ATENDIMENTO</th>
+                                    <th>DATA PRODUÇÃO</th>
+                                    <th>DATA RETORNO PCP</th>
+                                    <th>ÁREA PCP</th>
+                                    <th>RESPONSÁVEL PCP</th>
+                                    <th>CLIENTE</th>
+                                    <th>COD ITEM (Box)</th>
+                                    <th>Nº PEDIDO</th>
+                                    <th>QTD</th>
+                                    <th>OBSERVAÇÃO / RETORNO</th>
+                                    <th>STATUS</th>
+                                    <th>AÇÃO</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaSolicitacoes"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="paginacao-container">
+                        <button class="load-more-btn" id="btnCarregarMais" onclick="carregarMaisRegistros()">Carregar Mais Registros</button>
+                    </div>
+                </div>
+
+                <div class="page" id="exportacoes">
+                    <div class="cards">
+                        <div class="card">
+                            <div class="card-top">
+                                <div>
+                                    <div class="card-title">Exportar Excel</div>
+                                </div>
+                                <i class="fa-solid fa-file-excel" style="background:#dcfce7; color:#16a34a; font-size:24px; padding:20px; border-radius:14px;"></i>
+                            </div>
+                            <button class="send-btn" onclick="exportarExcel()">BAIXAR XLSX</button>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-top">
+                                <div>
+                                    <div class="card-title">Exportar PDF</div>
+                                </div>
+                                <i class="fa-solid fa-file-pdf" style="background:#fee2e2; color:#dc2626; font-size:24px; padding:20px; border-radius:14px;"></i>
+                            </div>
+                            <button class="send-btn" onclick="exportarPDF()">BAIXAR PDF</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <div class="modal" id="modalResposta">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTituloGeral">Responder Solicitação</h2>
+                <button type="button" class="btn-fechar-modal" onclick="fecharModal()">&times;</button>
+            </div>
+            
+            <div class="field">
+                <label class="field-label">RESPONSÁVEL PELO RETORNO *</label>
+                <input type="text" id="responsavelPcp" placeholder="Seu nome completo...">
+            </div>
+            
+            <div class="field">
+                <label class="field-label">ÁREA DESIGNADA *</label>
+                <select id="areaPcp">
+                    <option value="Escolha">Escolha</option>
+                    <option value="Decoração">Decoração</option>
+                    <option value="Montagem">Montagem</option>
+                </select>
+            </div>
+            
+            <div class="field">
+                <label class="field-label">RETORNO / OBSERVAÇÃO</label>
+                <textarea id="respostaTexto" placeholder="Escreva o retorno para la equipe comercial..."></textarea>
+            </div>
+            
+            <div class="field">
+                <label class="field-label">DATA PRODUÇÃO</label>
+                <input type="date" id="dataProducao">
+            </div>
+            
+            <div class="field">
+                <label class="field-label">DATA RETORNO PCP</label>
+                <input type="date" id="dataRetornoPcp">
+            </div>
+            
+            <div class="field">
+                <label class="field-label">STATUS</label>
+                <select id="novoStatus">
+                    <option value="PENDENTE">PENDENTE</option>
+                    <option value="AGUARDANDO SUPRIMENTOS">AGUARDANDO SUPRIMENTOS</option>
+                    <option value="AGUARDANDO COMERCIAL">AGUARDANDO COMERCIAL</option>
+                    <option value="PROGRAMADO">PROGRAMADO</option>
+                </select>
+            </div>
+            
+            <button class="save-btn" id="btnSalvarResposta" onclick="salvarResposta()">ENVIAR RETORNO</button>
+        </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
