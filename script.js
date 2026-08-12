@@ -144,6 +144,7 @@ function calcularPrevisaoEspecifica(tipoMaterial, quantidade) {
     return `${dia}/${mes}/${ano}`;
 }
 
+// === FUNÇÃO CORRIGIDA ===
 function importarItensDoExcel(event) {
     const arquivo = event.target.files[0];
     const cli = document.getElementById("cliente").value.trim();
@@ -159,15 +160,31 @@ function importarItensDoExcel(event) {
     const leitor = new FileReader();
     leitor.onload = function(e) {
         try {
-            const linhas = XLSX.utils.sheet_to_json(XLSX.read(e.target.result, { type: 'binary' }).Sheets[XLSX.read(e.target.result, { type: 'binary' }).SheetNames[0]]);
+            const workbook = XLSX.read(e.target.result, { type: 'binary' });
+            const linhas = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
             let contador = 0;
 
             linhas.forEach(linha => {
-                const cod = String(linha["Item"] || linha["Código"] || linha["item"] || "").trim();
-                const qtd = Number(linha["Quantidade"] || linha["Qtd"] || linha["qtd"] || 0);
-                const tipoImp = String(linha["Tipo"] || linha["TipoMaterial"] || "MTO").trim();
+                // Normaliza os cabeçalhos (remove acentos, espaços e deixa tudo minúsculo)
+                const linhaNormalizada = {};
+                for (let chave in linha) {
+                    const chaveLimpa = chave.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+                    linhaNormalizada[chaveLimpa] = linha[chave];
+                }
 
-                if (cod && qtd > 0) {
+                // Busca o código pelas variações mais comuns
+                const codRaw = linhaNormalizada["codigo"] || linhaNormalizada["cod"] || linhaNormalizada["item"] || linhaNormalizada["produto"] || "";
+                const cod = String(codRaw).trim();
+                
+                // Busca a quantidade pelas variações mais comuns
+                const qtdRaw = linhaNormalizada["quantidade"] || linhaNormalizada["qtd"] || linhaNormalizada["quant"] || 0;
+                const qtd = Number(qtdRaw);
+                
+                // Busca o tipo do material
+                const tipoRaw = linhaNormalizada["tipo"] || linhaNormalizada["tipomaterial"] || "MTO";
+                const tipoImp = String(tipoRaw).trim();
+
+                if (cod && cod !== "undefined" && qtd > 0) {
                     itensDoPedidoAtual.push({
                         codItem: cod,
                         tipoMaterial: tipoImp,
@@ -180,16 +197,25 @@ function importarItensDoExcel(event) {
                     contador++;
                 }
             });
+            
             renderListaItensProvisorios();
-            alert(`Sucesso! ${contador} itens importados.`);
+            
+            if (contador > 0) {
+                alert(`Sucesso! ${contador} itens importados.`);
+            } else {
+                alert("Atenção: O arquivo foi lido, mas nenhum item válido foi encontrado. Verifique se as colunas de 'Código' e 'Quantidade' estão preenchidas corretamente na planilha.");
+            }
+            
         } catch (erro) {
-            alert("Erro ao ler o arquivo Excel.");
+            console.error(erro);
+            alert("Erro ao ler o arquivo Excel. Verifique o formato.");
         } finally {
             event.target.value = "";
         }
     };
     leitor.readAsBinaryString(arquivo);
 }
+// =========================
 
 function adicionarItemNaLista() {
     const cod = document.getElementById("itemCod").value.trim();
@@ -399,7 +425,7 @@ export function renderTabela() {
             : `<td class="col-checkbox id-pcp-view hidden"></td>`;
 
         let botoesAcao = emailAutenticado === "atendimento@pcp.com"
-            ? `<button class="action-btn" onclick="abrirModal('${item.docId}')">RESPONDER</button><button class="delete-btn" onclick="deletarSolicitacao('${item.docId}')"><i class="fa-solid fa-trash"></i></button>`
+            ? `<button class="action-btn" onclick="window.abrirModal('${item.docId}')">RESPONDER</button><button class="delete-btn" onclick="window.deletarSolicitacao('${item.docId}')"><i class="fa-solid fa-trash"></i></button>`
             : '-';
             
         let cssStatus = item.status ? item.status.toLowerCase().replace(/\s+/g, '-') : 'pendente';
@@ -461,7 +487,7 @@ function carregarMaisRegistros() {
     iniciarOuvinteFirestore(limiteRegistros, renderTabela);
 }
 
-async function deletarSolicitacao(docId) {
+window.deletarSolicitacao = async function(docId) {
     if (!confirm("Deseja apagar esta solicitação?")) return;
     try {
         await excluirSolicitacaoBanco(docId);
@@ -482,7 +508,6 @@ window.removerItemDaLista = removerItemDaLista;
 window.enviarSolicitacaoMultiiens = enviarSolicitacaoMultiiens;
 window.renderTabela = renderTabela;
 window.carregarMaisRegistros = carregarMaisRegistros;
-window.deletarSolicitacao = deletarSolicitacao;
 window.filtrarPorStatus = (st) => { filtroStatusAtual = st; renderTabela(); };
 window.filtrarMes = () => { 
     filtroMesAtual = document.getElementById("filtroMes").value; 
