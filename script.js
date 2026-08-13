@@ -4,17 +4,16 @@ import {
     emailAutenticado, solicitacoes 
 } from "./firebase.js";
 import { listaVendedores } from "./vendedores.js"; 
-import { renderizarIndicadoresPcp } from "./pcp.js"; // Importa funções específicas do PCP
+import { renderizarIndicadoresPcp } from "./pcp.js"; 
 
 let usuarioAtual = "";
 let itensDoPedidoAtual = [];
-export let solicitacoesSelecionadasIds = []; // Exportado para uso no pcp.js
+export let solicitacoesSelecionadasIds = []; 
 let filtroMesAtual = "";
 let filtroVendedorAtual = ""; 
 let filtroStatusAtual = "TODOS";
 let limiteRegistros = 100;
 
-// Método exportado para modificar a seleção a partir do PCP
 export function setSolicitacoesSelecionadasIds(ids) {
     solicitacoesSelecionadasIds.length = 0;
     if (ids && ids.length) solicitacoesSelecionadasIds.push(...ids);
@@ -144,7 +143,6 @@ function calcularPrevisaoEspecifica(tipoMaterial, quantidade) {
     return `${dia}/${mes}/${ano}`;
 }
 
-// === FUNÇÃO CORRIGIDA ===
 function importarItensDoExcel(event) {
     const arquivo = event.target.files[0];
     const cli = document.getElementById("cliente").value.trim();
@@ -165,22 +163,18 @@ function importarItensDoExcel(event) {
             let contador = 0;
 
             linhas.forEach(linha => {
-                // Normaliza os cabeçalhos (remove acentos, espaços e deixa tudo minúsculo)
                 const linhaNormalizada = {};
                 for (let chave in linha) {
-                    const chaveLimpa = chave.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+                    const chaveLimpa = chave.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
                     linhaNormalizada[chaveLimpa] = linha[chave];
                 }
 
-                // Busca o código pelas variações mais comuns
                 const codRaw = linhaNormalizada["codigo"] || linhaNormalizada["cod"] || linhaNormalizada["item"] || linhaNormalizada["produto"] || "";
                 const cod = String(codRaw).trim();
                 
-                // Busca a quantidade pelas variações mais comuns
                 const qtdRaw = linhaNormalizada["quantidade"] || linhaNormalizada["qtd"] || linhaNormalizada["quant"] || 0;
                 const qtd = Number(qtdRaw);
                 
-                // Busca o tipo do material
                 const tipoRaw = linhaNormalizada["tipo"] || linhaNormalizada["tipomaterial"] || "MTO";
                 const tipoImp = String(tipoRaw).trim();
 
@@ -215,7 +209,6 @@ function importarItensDoExcel(event) {
     };
     leitor.readAsBinaryString(arquivo);
 }
-// =========================
 
 function adicionarItemNaLista() {
     const cod = document.getElementById("itemCod").value.trim();
@@ -348,14 +341,14 @@ function renderMonitoramentoVendedor() {
     if (!tbody) return;
 
     if (!vendedor) {
-        tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #94a3b8; font-style: italic; padding: 14px;">Selecione um vendedor para monitorar.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: #94a3b8; font-style: italic; padding: 14px;">Selecione um vendedor para monitorar suas solicitações.</td></tr>`;
         return;
     }
 
     const filtradas = solicitacoes.filter(item => item.vendedor === vendedor);
 
     if (filtradas.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: #94a3b8; font-style: italic; padding: 14px;">Nenhuma solicitação encontrada para este vendedor.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="11" style="text-align: center; color: #94a3b8; font-style: italic; padding: 14px;">Nenhuma solicitação encontrada para este vendedor.</td></tr>`;
         return;
     }
 
@@ -371,16 +364,17 @@ function renderMonitoramentoVendedor() {
              ultimaAtualizacao = item.dataAtendimento;
         }
 
+        // Colunas reordenadas (ID no final)
         tbody.innerHTML += `
             <tr>
-                <td>${item.numeroPedido || "-"}</td>
-                <td>${item.dataSolicitacao || "-"}</td>
                 <td>${item.cliente || "-"}</td>
                 <td><strong>${item.codItem || "-"}</strong> <small>(${item.tipoMaterial || "MTO"})</small></td>
+                <td>${item.numeroPedido || "-"}</td>
                 <td>${item.quantidade || 0}</td>
                 <td><span class="status-badge status-${cssStatus}">${item.status || 'PENDENTE'}</span></td>
-                <td>${item.responsavelPcp || "-"}</td>
                 <td style="color:#1d4ed8; font-weight:700;">${item.dataPrevista || "-"}</td>
+                <td>${item.dataSolicitacao || "-"}</td>
+                <td>${item.responsavelPcp || "-"}</td>
                 <td>${ultimaAtualizacao}</td>
                 <td>
                     <div style="max-width: 250px; white-space: normal; word-wrap: break-word;">
@@ -388,6 +382,7 @@ function renderMonitoramentoVendedor() {
                         ${item.resposta ? `<b style="color:#0284c7;">Retorno:</b> ${item.resposta}` : ""}
                     </div>
                 </td>
+                <td>${item.id}</td>
             </tr>
         `;
     });
@@ -430,11 +425,15 @@ export function renderTabela() {
             
         let cssStatus = item.status ? item.status.toLowerCase().replace(/\s+/g, '-') : 'pendente';
 
+        // Colunas Reordenadas (CLIENTE | COD ITEM | Nº PEDIDO | QTD) e ID no final antes da AÇÃO
         tabela.innerHTML += `
         <tr>
             ${tdCheckbox}
-            <td>${item.id}</td>
-            <td><strong>${item.tipoMaterial || "MTO"}</strong></td>
+            <td>${item.cliente || "-"}</td>
+            <td><strong>${item.codItem || "-"}</strong></td>
+            <td>${item.numeroPedido || "-"}</td>
+            <td>${item.quantidade || 0}</td>
+            <td>${item.tipoMaterial || "MTO"}</td>
             <td>${item.mercadoSolicitante || "-"}</td>
             <td>${item.vendedor || "-"}</td>
             <td>${item.dataSolicitacao || "-"}</td>
@@ -446,16 +445,15 @@ export function renderTabela() {
             <td>${item.dataRetornoPcp || "-"}</td>
             <td>${item.areaPcp || "-"}</td>
             <td><strong>${item.responsavelPcp || "-"}</strong></td>
-            <td>${item.cliente || "-"}</td>
-            <td>${item.codItem || "-"}</td>
-            <td>${item.numeroPedido || "-"}</td>
-            <td>${item.quantidade || 0}</td>
             <td>
-                <div>${item.observacao || ""}</div>
-                ${item.resposta ? `<div class="response"><b>RETORNO PCP:</b><br>${item.resposta}</div>` : ''}
-                ${item.logAuditoria ? `<div class="log-auditoria">${item.logAuditoria}</div>` : ''}
+                <div style="max-width:250px; white-space:normal; word-wrap:break-word;">
+                    ${item.observacao ? `<b>Obs:</b> ${item.observacao}<br>` : ""}
+                    ${item.resposta ? `<b style="color:#0284c7;">Retorno PCP:</b><br>${item.resposta}` : ""}
+                    ${item.logAuditoria ? `<div class="log-auditoria" style="margin-top:4px;">${item.logAuditoria}</div>` : ''}
+                </div>
             </td>
             <td><span class="status-badge status-${cssStatus}">${item.status || 'PENDENTE'}</span></td>
+            <td>${item.id}</td>
             <td>${botoesAcao}</td>
         </tr>`;
     });
@@ -496,6 +494,70 @@ window.deletarSolicitacao = async function(docId) {
         alert("Erro ao remover.");
     }
 }
+
+/* MODAL FLEGAR POR LISTA */
+window.abrirModalFlegarLista = function() {
+    document.getElementById('textoFlegarLista').value = '';
+    document.getElementById('flegarInputArea').classList.remove('hidden');
+    document.getElementById('flegarResultArea').classList.add('hidden');
+    document.getElementById('modalFlegarLista').style.display = 'flex';
+};
+
+window.fecharModalFlegarLista = function() {
+    document.getElementById('modalFlegarLista').style.display = 'none';
+};
+
+window.processarFlegarLista = function() {
+    const texto = document.getElementById('textoFlegarLista').value;
+    const linhas = texto.split('\n').map(l => l.trim()).filter(l => l !== '');
+    const codigosUnicos = [...new Set(linhas)];
+
+    if(codigosUnicos.length === 0) {
+        alert('Nenhum código válido encontrado na lista.');
+        return;
+    }
+
+    let baseDados = emailAutenticado === "atendimento@pcp.com" 
+        ? solicitacoes 
+        : solicitacoes.filter(item => item.remetenteEmail === emailAutenticado);
+
+    let encontradosSet = new Set();
+    let naoEncontrados = [];
+
+    codigosUnicos.forEach(cod => {
+        // Compara com texto exato (considerando possíveis zeros a esquerda mantidos pelo .trim())
+        const matches = baseDados.filter(item => String(item.codItem).trim() === cod);
+        if (matches.length > 0) {
+            encontradosSet.add(cod);
+            matches.forEach(m => {
+                if (!solicitacoesSelecionadasIds.includes(m.docId)) {
+                    solicitacoesSelecionadasIds.push(m.docId);
+                }
+            });
+        } else {
+            naoEncontrados.push(cod);
+        }
+    });
+
+    // Re-renderiza para atualizar os checkboxes flegados
+    renderTabela();
+
+    // Atualiza UI Modal
+    document.getElementById('flegarInputArea').classList.add('hidden');
+    document.getElementById('flegarResultArea').classList.remove('hidden');
+
+    document.getElementById('flegarResTotal').innerText = `Total informado: ${codigosUnicos.length}`;
+    document.getElementById('flegarResEncontrados').innerText = `Encontrados e selecionados: ${encontradosSet.size}`;
+    document.getElementById('flegarResNaoEncontrados').innerText = `Não encontrados: ${naoEncontrados.length}`;
+    
+    const divNaoEncontrados = document.getElementById('flegarListaNaoEncontrados');
+    if (naoEncontrados.length > 0) {
+        divNaoEncontrados.innerHTML = `<strong>Códigos não localizados:</strong><br>${naoEncontrados.join('<br>')}`;
+        divNaoEncontrados.style.display = 'block';
+    } else {
+        divNaoEncontrados.style.display = 'none';
+    }
+};
 
 /* VINCULAÇÃO GLOBAL DOS BOTÕES DO ESCOPO GERAL */
 window.login = login;

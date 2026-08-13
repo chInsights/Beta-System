@@ -53,7 +53,6 @@ export function fecharModal() {
 }
 
 export async function salvarResposta() {
-    // Caso algum clique tenha fugido do evento, forçamos a busca pela tela
     const marcados = document.querySelectorAll(".chk-solicitacao-item:checked");
     if (marcados.length > 0) {
         let ids = Array.from(marcados).map(c => c.value);
@@ -85,7 +84,7 @@ export async function salvarResposta() {
         await atualizarRetornoPcp(solicitacoesSelecionadasIds, dados);
         fecharModal();
         alert(`Sucesso! ${solicitacoesSelecionadasIds.length} retornos atualizados.`);
-        setSolicitacoesSelecionadasIds([]); // Limpar seleção após sucesso
+        setSolicitacoesSelecionadasIds([]); 
     } catch (e) {
         alert("Erro ao salvar retorno.");
     } finally {
@@ -490,6 +489,47 @@ ${value} (${percentage})`;
 /* ==========================================================================
    EXPORTAÇÕES (PCP e Geral)
    ========================================================================== */
+
+export function exportarPendentesPcp() {
+    // Exportar SOMENTE registros pendentes que requerem ação (Tudo exceto PROGRAMADO e CONCLUIDO)
+    const pendentes = solicitacoes.filter(item => item.status !== 'PROGRAMADO' && item.status !== 'CONCLUIDO');
+    
+    if (pendentes.length === 0) {
+        alert('Não há solicitações pendentes no momento para exportação.');
+        return;
+    }
+
+    // A ordem obrigatória estabelecida: CLIENTE | COD ITEM (Box) | Nº PEDIDO | QTD | ID | STATUS ...
+    const dadosExcel = pendentes.map(item => ({
+        "CLIENTE": item.cliente || "-",
+        "COD ITEM (Box)": item.codItem || "-",
+        "Nº PEDIDO": item.numeroPedido || "-",
+        "QTD": item.quantidade || 0,
+        "ID": item.id || "-",
+        "STATUS": item.status || "PENDENTE",
+        "TIPO": item.tipoMaterial || "MTO",
+        "MERCADO": item.mercadoSolicitante || "-",
+        "VENDEDOR": item.vendedor || "-",
+        "DATA SOLICITADA": item.dataSolicitacao || "-",
+        "DATA CLIENTE": item.dataCliente || "-",
+        "DATA PREVISTA": item.dataPrevista || "-",
+        "DATA DESEJÁVEL": item.dataDesejavel || "-",
+        "DATA ATENDIMENTO": item.dataAtendimento || "-",
+        "DATA PRODUÇÃO": item.dataProducao || "-",
+        "DATA RETORNO PCP": item.dataRetornoPcp || "-",
+        "ÁREA PCP": item.areaPcp || "-",
+        "RESPONSÁVEL PCP": item.responsavelPcp || "-",
+        "OBSERVAÇÃO / RETORNO": item.observacao || ""
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(dadosExcel);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Pendentes");
+
+    const dataHoje = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(wb, `Solicitacoes_Pendentes_PCP_${dataHoje}.xlsx`);
+}
+
 export function exportarExcel() {
     const dados = solicitacoes.map(({ docId, ...resto }) => resto);
     const ws = XLSX.utils.json_to_sheet(dados);
@@ -541,5 +581,6 @@ window.salvarResposta = salvarResposta;
 window.toggleModoTV = toggleModoTV;
 window.toggleMultiSelect = toggleMultiSelect;
 window.renderizarIndicadoresPcp = renderizarIndicadoresPcp;
+window.exportarPendentesPcp = exportarPendentesPcp;
 window.exportarExcel = exportarExcel;
 window.exportarPDF = exportarPDF;
